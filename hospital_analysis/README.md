@@ -8,6 +8,9 @@
   * [Load data into Postgres](#load-data-into-postgres)
   * [Visualize Results in QGIS3](#visualize-results-in-qgis3)
   * [Analyze data in PostGIS](#analyze-data-in-postgis)
+- [Future and TODO](#future-and-todo)
+- [Appendix](#appendix)
+  * [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result)
 - [Reference](#reference)
   * [Hospital Data](#hospital-data)
   * [Software](#software)
@@ -17,9 +20,6 @@
     + [GeoJSON.io](#geojsonio)
     + [CSV to SQL Converter Website](#csv-to-sql-converter-website)
     + [CSV to Markdown Converter Website](#csv-to-markdown-converter-website)
-- [Future and TODO](#future-and-todo)
-- [Appendix](#appendix)
-  * [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -125,6 +125,7 @@ SET geom =
 ```
 ## Visualize Results in QGIS3
 1. In QGIS add PostGIS connection to database
+
 ![QGIS Add Conection](docs/images/postgis_add_connection.png)
 2. Add hospitals points to layer and you should see the following screen (Adding XYZ Tiles with Google would be helpful to visualization as well)
 ![QGIS 3 Hospital Visualization](docs/images/qgis3_hospital_visualization.png)
@@ -132,6 +133,7 @@ SET geom =
 3. Analyze kmeans point clusters using ST_ClusterKMeans
     1. Click on Processing Toolbox
     2. Select k-means clustering
+
 ![QGIS 3 K Means Clustering](docs/images/k_means_clustering_qgi3_selection.png)
 ![QGIS 3 K Means Clustering](docs/images/k_means_clustering_qgi3_wizard.png)
     3. Analyze the result using layers in QGIS
@@ -196,41 +198,6 @@ FROM hospital_cluter_group
 
 See [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result)
 
-# Reference
-
-## Hospital Data
-https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals?selectedAttribute=LONGITUDE 
-
-## Software
-### Postgres.app
-Postgres to for postgres database server
-https://postgresapp.com/downloads.html 
-
-### pgAdmin 4
-pgAdmin 4 for administrating Postgres Database
-https://www.pgadmin.org/download/ 
-
-## Online Tool
-
-### GeoJSON.io
-geojson.io is a convenient online tool to visualize GeoJSON on a map
-https://geojson.io/
-
-The following is the polygon cluster with the largest number of hospitals.
-![largest cluster visualization](docs/images/cid_6_largest_cluster.png)
-
-### CSV to SQL Converter Website
-Convenient online tool to convert csv text to SQL queries include create table
-https://www.convertcsv.com/csv-to-sql.htm 
-
-![csv to sql converter website](docs/images/csv_to_sql_converter_website.png)
-
-### CSV to Markdown Converter Website
-Convenient online tool to convert csv text to Markdown
-https://www.convertcsv.com/csv-to-markdown.htm
-
-
-
 # Future and TODO
 - [ ] Analyze cluster using Density-based spatial clustering of applications with noise (DBSCAN) [algorithm](https://postgis.net/docs/ST_ClusterDBSCAN.html) to analyze based on distance
 - [ ] Analyze Using [GeoPandas](https://geopandas.org/)
@@ -264,3 +231,37 @@ Data:
 |15 |1    |7.3524440000000500  |134.4645200000000000 |{PW}                                    |0                 |0                 |{"type":"Point","coordinates":[134.46452,7.352444]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 |3  |1    |-14.2902420000000000|-170.6857410000000000|{AS}                                    |0                 |0                 |{"type":"Point","coordinates":[-170.685741,-14.290242]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 |1  |1    |51.8680050000000000 |-176.6402630000000000|{AK}                                    |0                 |0                 |{"type":"Point","coordinates":[-176.640263,51.868005]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+
+# Reference
+
+## Hospital Data
+https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals?selectedAttribute=LONGITUDE 
+
+## Software
+### Postgres.app
+Postgres to for postgres database server
+https://postgresapp.com/downloads.html 
+
+### pgAdmin 4
+pgAdmin 4 for administrating Postgres Database
+https://www.pgadmin.org/download/ 
+
+## Online Tool
+
+### GeoJSON.io
+geojson.io is a convenient online tool to visualize GeoJSON on a map
+https://geojson.io/
+
+The following is the polygon cluster with the largest number of hospitals.
+![largest cluster visualization](docs/images/cid_6_largest_cluster.png)
+
+### CSV to SQL Converter Website
+Convenient online tool to convert csv text to SQL queries include create table
+https://www.convertcsv.com/csv-to-sql.htm 
+
+![csv to sql converter website](docs/images/csv_to_sql_converter_website.png)
+
+### CSV to Markdown Converter Website
+Convenient online tool to convert csv text to Markdown
+https://www.convertcsv.com/csv-to-markdown.htm
+
