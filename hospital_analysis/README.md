@@ -1,0 +1,267 @@
+- [Summary](#summary)
+  * [Analysis Summary](#analysis-summary)
+    + [Small Cluster Analysis](#small-cluster-analysis)
+    + [Distance Analysis](#distance-analysis)
+- [Instructions / How To](#instructions---how-to)
+  * [Download Data](#download-data)
+  * [Install Tools](#install-tools)
+  * [Load data into Postgres](#load-data-into-postgres)
+  * [Visualize Results in QGIS3](#visualize-results-in-qgis3)
+  * [Analyze data in PostGIS](#analyze-data-in-postgis)
+- [Future and TODO](#future-and-todo)
+- [Appendix](#appendix)
+  * [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result)
+- [Reference](#reference)
+  * [Hospital Data](#hospital-data)
+  * [Software](#software)
+    + [Postgres.app](#postgresapp)
+    + [pgAdmin 4](#pgadmin-4)
+  * [Online Tool](#online-tool)
+    + [GeoJSON.io](#geojsonio)
+    + [CSV to SQL Converter Website](#csv-to-sql-converter-website)
+    + [CSV to Markdown Converter Website](#csv-to-markdown-converter-website)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+# Summary
+As a weekend project, to practice my GIS skills, I analyzed [hospital GPS location data for 50 US states, Washington D.C., US territories of Puerto Rico, Guam, American Samoa, Northern Mariana Islands, Palau, and Virgin Islands](https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals). I analyze the culsters of hospital GPS locations using [K-means algorithm](https://postgis.net/docs/ST_ClusterKMeans.html). 
+
+## Analysis Summary
+
+### Small Cluster Analysis
+Using 20 clusters as a starting point, the following were the small hopsital culster locations in the US.
+
+|Hospital Count|Latitude   |Longitutde  |States                        |Hospital Names                                                                                               |
+|--------------|-----------|------------|------------------------------|-------------------------------------------------------------------------------------------------------------|
+|77            |18.2791879 |-66.27450576|Puerto Rico, Virgin Islands   |Too many to display                                                                                          |
+|31            |21.06266104|-157.4366158|Hawaii                        |Too many to display                                                                                          |
+|20            |61.42833472|-149.1065951|Alaska                        |Too many to display                                                                                          |
+|6             |56.84646526|-133.6972936|Alaska                        |Too many to display                                                                                          |
+|5             |64.49633319|-161.0029954|Alaska                        |Too many to display                                                                                          |
+|4             |13.92923293|145.0146553 |Guam, Northern Mariana Islands|GUAM REGIONAL MEDICAL CITY, COMMONWEALTH HEALTH CENTER, GUAM MEMORIAL HOSPITAL AUTHORITY, NAVAL HOSPITAL GUAM|
+|1             |7.352444   |134.46452   |Palau                         |BELAU NATIONAL HOSPITAL                                                                                      |
+|1             |-14.290242 |-170.685741 |American Samoa                |LBJ TROPICAL MEDICAL CENTER                                                                                  |
+|1             |51.868005  |-176.640263 |Alaska                        |ADAK MEDICAL CENTER - EAT                                                                                    |
+
+
+### Distance Analysis
+Excluding the dispersed location in West Alaska with cluster center of latitutde, longtiude, `64.49633319, -161.0029954`, the following are the duration that can be reach within 1500 kilometers via air transport assuming the `maximum distance can be reached`. 
+|Name      |Top Speed (kph)|Hours to Reach 1500km|Link                                    |
+|----------|---------------|---------------------|----------------------------------------|
+|Mavic Pro |65             |23.1                 |https://www.dji.com/mavic               |
+|Zipline   |100            |15.0                 |https://flyzipline.com/how-it-works/    |
+|Cessna 152|203            |7.4                  |https://en.wikipedia.org/wiki/Cessna_152|
+
+See [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result) for the rows of data.
+
+# Instructions / How To 
+
+## Download Data
+Download Hospital data from Homeland Infrastructure Foundation-Level Data (HIFLD)
+
+https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals?selectedAttribute=LONGITUDE 
+
+## Install Tools
+1. Install Postgres Database ([Use Postgres.app for Mac](https://postgresapp.com/))
+2. Install [pgadmin4](https://www.pgadmin.org/) database client tool 
+3. Enable (PostGIS)[https://postgis.net/install/] in Postgres [For mac use `brew install postgis`]
+4. In the working database execute `CREATE EXTENSION postgis;` to enable postgis.
+## Load data into Postgres
+1. Create database table using [Convert CSV to SQL](https://www.convertcsv.com/csv-to-sql.htm) online tool
+Example create table query
+```sql
+CREATE TABLE covid.hospitals(
+   X          NUMERIC(14,4) NOT NULL
+  ,Y          NUMERIC(17,9) NOT NULL
+  ,FID        INTEGER  NOT NULL
+  ,ID         INTEGER  NOT NULL
+  ,NAME       VARCHAR(86) NOT NULL
+  ,ADDRESS    VARCHAR(57) NOT NULL
+  ,CITY       VARCHAR(24) NOT NULL
+  ,STATE      VARCHAR(2) NOT NULL
+  ,ZIP        INTEGER  NOT NULL
+  ,ZIP4       VARCHAR(13) NOT NULL
+  ,TELEPHONE  VARCHAR(14) NOT NULL
+  ,TYPE       VARCHAR(18) NOT NULL
+  ,STATUS     VARCHAR(6) NOT NULL
+  ,POPULATION INTEGER  NOT NULL
+  ,COUNTY     VARCHAR(20) NOT NULL
+  ,COUNTYFIPS VARCHAR(13) NOT NULL
+  ,COUNTRY    VARCHAR(3) NOT NULL
+  ,LATITUDE   NUMERIC(17,14) NOT NULL
+  ,LONGITUDE  NUMERIC(17,13) NOT NULL
+  ,NAICS_CODE INTEGER  NOT NULL
+  ,NAICS_DESC VARCHAR(69) NOT NULL
+  ,SOURCE     VARCHAR(162) NOT NULL
+  ,SOURCEDATE VARCHAR(19) NOT NULL
+  ,VAL_METHOD VARCHAR(13) NOT NULL
+  ,VAL_DATE   VARCHAR(19) NOT NULL
+  ,WEBSITE    VARCHAR(223) NOT NULL
+  ,STATE_ID   VARCHAR(16) NOT NULL
+  ,ALT_NAME   VARCHAR(90) NOT NULL
+  ,ST_FIPS    INTEGER  NOT NULL
+  ,OWNER      VARCHAR(31) NOT NULL
+  ,TTL_STAFF  INTEGER  NOT NULL
+  ,BEDS       INTEGER  NOT NULL
+  ,TRAUMA     VARCHAR(46) NOT NULL
+  ,HELIPAD    VARCHAR(1) NOT NULL
+);
+```
+2. Load data using pgadmin4
+    1. With small amount of data, we can directly use the insert rows statement, but with large amount of data import tool should be used.
+    2. Import data using pgadmin4 (The table the data is being imported into must be highlighted in pgadmin4)
+![pgadmin4 data import tool pic](docs/images/pgadmin4_data_import_tool.png)
+3. Add Geometry Column with Latlng
+```sql
+SELECT 
+    AddGeometryColumn ('covid','hospitals','geom',4326,'POINT',2);
+```
+4. Convert LatLng to St_points
+```sql
+UPDATE
+    covid.hospitals
+SET geom = 
+    ST_SetSRID(ST_MakePoint(longitude, latitude),4326)
+```
+## Visualize Results in QGIS3
+1. In QGIS add PostGIS connection to database
+
+![QGIS Add Conection](docs/images/postgis_add_connection.png)
+2. Add hospitals points to layer and you should see the following screen (Adding XYZ Tiles with Google would be helpful to visualization as well)
+![QGIS 3 Hospital Visualization](docs/images/qgis3_hospital_visualization.png)
+
+3. Analyze kmeans point clusters using ST_ClusterKMeans
+    1. Click on Processing Toolbox
+    2. Select k-means clustering
+
+![QGIS 3 K Means Clustering](docs/images/k_means_clustering_qgi3_selection.png)
+![QGIS 3 K Means Clustering](docs/images/k_means_clustering_qgi3_wizard.png)
+    3. Analyze the result using layers in QGIS
+    4. In Layer Properties select `categorized` and pick the CLUSTER_ID generated from CLUSTER_ID.
+![Categorized selection](docs/images/categorized_layer_selection.png)
+    5. Click on classify to generate the values. And apply to view the visualization.
+![QGIS 3 Hospital Visualization](docs/images/qgis3_hospital_20_clusters.png)
+    6. The same analysis can be conducted using PostGIS SQL query `ST_ClusterKMeans`
+```sql
+SELECT
+    ST_ClusterKMeans(geom,3) over() cid,
+    name, address, city, state, zip, latitude, longitude
+FROM
+    covid.hospitals;
+```
+## Analyze data in PostGIS
+In SQL, analyze the area it needs to cover, the maximum distance, and the number of hospitals
+```sql
+WITH
+    hospital_cluster_points AS
+    (
+        SELECT
+            ST_ClusterKMeans(geom,20) over() cid,
+            name,
+            address,
+            city,
+            state,
+            zip,
+            latitude,
+            longitude,
+            geom
+        FROM covid.hospitals
+    ),
+    hospital_cluter_group AS (
+    SELECT
+        cid,
+        count(cid),
+        avg(latitude) "lat",
+        avg(longitude) "lng",
+        array_agg(distinct state) "states",
+        st_area(ST_MakeValid(ST_ConvexHull(ST_Collect(geom)))::geography)/1000000 "area(km2)",
+        ST_MakeValid(ST_ConvexHull(ST_Collect(geom))) "geom" 
+    FROM hospital_cluster_points
+    group by cid
+    order by count(cid) DESC
+    )
+
+SELECT 
+    cid,
+    count,
+    lat,
+    lng,
+    states,
+    hospital_cluter_group."area(km2)", 
+    ST_MaxDistance(
+        ST_Transform(ST_SetSRID(ST_MakePoint(lng, lat),4326), 3857),
+        ST_Transform(geom, 3857)
+    )/ 1000 "max_distnace_km",
+    ST_AsGeoJSON(geom)
+FROM hospital_cluter_group
+```
+
+See [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result)
+
+# Future and TODO
+- [ ] Analyze cluster using Density-based spatial clustering of applications with noise (DBSCAN) [algorithm](https://postgis.net/docs/ST_ClusterDBSCAN.html) to analyze based on distance
+- [ ] Analyze Using [GeoPandas](https://geopandas.org/)
+
+
+# Appendix
+## 20 Hospital Cluster Analysis Result
+- [Download labeled csv here](./docs/data/hospitals_20_clusters_labeled.csv)
+- [Download aggregated csv here](./docs/data/hospitals_20_clusters_aggregated.csv)
+
+Data:
+|cid|count|lat                 |lng                  |states                                  |area(km2)         |max_distnace_km   |st_asgeojson                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|---|-----|--------------------|---------------------|----------------------------------------|------------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|6  |1065 |40.7701402338197695 |-86.7480110540600668 |{IA,IL,IN,KY,MI,MO,OH,TN,WI}            |709364.8071422393 |1020.2507729426447|{"type":"Polygon","coordinates":[[[-85.190868827,35.620685972],[-85.742978922,35.699844491],[-86.425031376,35.860579123],[-89.571144976,37.30358194],[-90.772665815,37.925973114],[-91.170642401,38.195829614],[-91.449585554,38.693078127],[-91.173080162,40.80934797],[-90.106733303,46.48074586],[-89.30165846,46.865595361],[-88.443500848,47.238783173],[-84.350551184,46.498080874],[-82.652115684,43.842662631],[-82.429629625,42.98687104],[-82.433390417,42.955942806],[-82.479201914,42.785363647],[-82.881604797,41.287962046],[-83.427094959,39.547856936],[-83.945255796,38.077121254],[-84.515863673,36.504424885],[-85.190868827,35.620685972]]]}                                                  |
+|8  |990  |32.0831507626990419 |-97.2962513607060356 |{AR,KS,LA,NM,OK,TX}                     |920627.7451565007 |849.1902738951314 |{"type":"Polygon","coordinates":[[[-97.510696549,25.917848064],[-98.858359166,26.376432105],[-104.827508642,31.049173256],[-104.41086139,32.848974782],[-103.23378959,34.420620961],[-101.970558165,35.864495561],[-100.926788287,37.056683076],[-100.017405482,37.786276253],[-95.639427338,37.040993678],[-94.879057299,36.872479475],[-94.45911011,36.408583288],[-94.034090874,33.461070019],[-93.862964514,31.333808731],[-93.766556793,30.099819527],[-93.923892557,29.909710213],[-97.510696549,25.917848064]]]}                                                                                                                                                                                           |
+|13 |900  |41.5381766877089440 |-73.7170186128021910 |{CT,DE,MA,MD,ME,NH,NJ,NY,PA,RI,VT}      |481859.7282281418 |1060.1010654955526|{"type":"Polygon","coordinates":[[[-75.852554881,37.997557909],[-78.397592747,43.223247441],[-75.49988778,44.691590653],[-74.908740086,44.93623403],[-68.591868974,47.265582057],[-67.824388798,46.886537958],[-67.268015714,45.17758929],[-67.47585524,44.713969115],[-70.1008,41.2752],[-75.211333086,38.339525161],[-75.852554881,37.997557909]]]}                                                                                                                                                                                                                                                                                                                                                             |
+|19 |849  |38.5066787802591820 |-80.0226988946748834 |{DC,KY,MD,NC,NY,OH,PA,SC,TN,VA,WV}      |538780.9734351973 |719.7739361900361 |{"type":"Polygon","coordinates":[[[-78.66354577,33.865712235],[-79.752055402,34.160066151],[-83.444792568,35.434485493],[-84.556007063,35.888604862],[-84.551726413,35.934965091],[-83.751545309,38.422151045],[-82.976632127,40.815339897],[-82.710196917,41.445892256],[-79.032430724,43.154184019],[-78.708316957,43.288559947],[-77.950901304,42.122421081],[-76.972524999,40.209605],[-76.54677819,39.290678811],[-75.864072582,37.475428927],[-75.61764914,35.939836499],[-76.755041171,34.726209498],[-78.021590312,33.92966195],[-78.66354577,33.865712235]]]}                                                                                                                                            |
+|12 |740  |42.3035674909095123 |-95.4466113289134895 |{IA,IL,KS,MN,MO,ND,NE,SD,WI}            |1038775.7465609459|1254.0311391591397|{"type":"Polygon","coordinates":[[[-94.369467921,36.866953957],[-98.729283513,37.644500187],[-99.903364399,38.083252739],[-100.469153806,38.480468071],[-101.671476777,44.039808763],[-102.380421892,48.311293849],[-102.084488198,48.674238353],[-100.449981264,48.829124808],[-99.615557842,48.862642408],[-95.760405621,48.839236136],[-93.431770339,48.594802018],[-90.341426786,47.756480645],[-90.441466465,45.930315355],[-90.607874937,44.557886709],[-91.399457202,39.936358882],[-91.450538432,39.710612139],[-91.937865458,38.847135248],[-92.181792524,38.565792362],[-92.628889333,38.134963509],[-94.369467921,36.866953957]]]}                                                                     |
+|9  |712  |30.7504094394986466 |-82.5834806958721621 |{AL,FL,GA,NC,SC,TN}                     |594847.6774413065 |783.3523172515521 |{"type":"Polygon","coordinates":[[[-81.767407002,24.564198604],[-86.635925294,30.455594141],[-86.494549112,31.295795325],[-86.285790053,32.36696933],[-85.629618896,35.04710628],[-84.981779456,35.529101344],[-84.464284626,35.600693844],[-82.244231202,34.920043972],[-81.629300789,34.712160133],[-78.820106779,33.758439434],[-80.139681562,25.813219094],[-80.522305079,25.006156544],[-81.094436333,24.710362489],[-81.767407002,24.564198604]]]}                                                                                                                                                                                                                                                          |
+|16 |701  |32.8802196779914959 |-90.4575846371583208 |{AL,AR,FL,KY,LA,MO,MS,TN}               |561646.7269798362 |708.895627377003  |{"type":"Polygon","coordinates":[[[-90.311359813,29.456890868],[-93.165683312,29.808078451],[-93.368674895,30.230253554],[-93.436424441,30.452520835],[-93.795548878,32.404709169],[-94.105867995,34.894553578],[-94.190464286,36.1624095],[-94.191356904,36.339906334],[-93.930746982,36.92700362],[-93.821125283,37.111391703],[-92.633946236,37.681277526],[-91.785982986,37.952489533],[-90.302931377,37.558874137],[-86.819231007,35.919115166],[-86.078401216,35.496879965],[-85.913861391,35.208063352],[-85.965982141,34.007736282],[-86.090783396,33.440276821],[-87.039433094,30.397776323],[-87.157054651,30.360481945],[-90.311359813,29.456890868]]]}                                                |
+|14 |501  |34.0443934347964649 |-115.7377023935988024|{AZ,CA,NV,UT}                           |500789.78650429397|775.158009884806  |{"type":"Polygon","coordinates":[[[-109.560682188,31.339594366],[-110.959747134,31.340286884],[-117.071712131,32.617494005],[-118.330705123,33.339204041],[-119.810296842,34.433823435],[-119.112450471,35.351504293],[-118.057911853,36.609100201],[-114.858604793,39.256727038],[-112.643858779,38.289149447],[-111.46358713,36.917647994],[-109.975385953,34.165232095],[-109.735157237,32.822754716],[-109.560682188,31.339594366]]]}                                                                                                                                                                                                                                                                         |
+|18 |417  |39.9679516425540127 |-106.7487580037697842|{AZ,CO,ID,KS,MT,ND,NE,NM,OK,SD,TX,UT,WY}|1399067.8364728028|1449.5513816828   |{"type":"Polygon","coordinates":[[[-106.208422185,31.681176614],[-106.499075548,31.769835867],[-107.767727706,32.260336112],[-108.26091772,32.797129976],[-109.285257957,34.131735035],[-110.426583661,35.802106044],[-112.340276972,38.954777445],[-112.561095825,39.350051767],[-112.848630661,42.78144858],[-111.516003312,46.321864919],[-110.672275718,47.820404468],[-109.685817755,48.538077306],[-105.418244,48.788246392],[-103.299034692,48.906692961],[-102.934507088,48.403001934],[-101.730725431,43.16975367],[-100.862954299,39.127100906],[-100.868387832,37.969866548],[-100.986562879,37.437092916],[-101.475994626,36.690972412],[-104.523267272,33.309289372],[-106.208422185,31.681176614]]]}|
+|17 |307  |38.2626983210456547 |-121.4087627501074919|{CA,NV,OR}                              |388837.65850619116|786.563372913638  |{"type":"Polygon","coordinates":[[[-120.126303888,34.602082788],[-120.452188325,34.635371609],[-121.913128652,36.578901867],[-123.800880567,39.431233741],[-124.136405293,40.582624915],[-124.418524465,42.411319387],[-124.402058376,43.112425063],[-120.352111218,42.181294664],[-115.730631041,40.823443768],[-117.222490121,38.061643183],[-120.126303888,34.602082788]]]}                                                                                                                                                                                                                                                                                                                                    |
+|4  |268  |46.3468074503172172 |-119.6357269798470149|{ID,MT,NV,OR,WA}                        |641221.8018253101 |1028.0564078475297|{"type":"Polygon","coordinates":[[[-116.097796998,41.949891633],[-124.179386007,43.179442712],[-124.232995297,43.383406508],[-124.392588001,47.946207344],[-122.472979439,48.773268355],[-116.321081545,48.702301082],[-112.327023468,48.628509874],[-110.972042078,48.510072169],[-111.260967555,47.491601164],[-112.191992443,45.453027117],[-113.686096682,42.620397286],[-113.781777494,42.534871047],[-116.097796998,41.949891633]]]}                                                                                                                                                                                                                                                                        |
+|2  |77   |18.2791879014935597 |-66.2745057567791909 |{PR,VI}                                 |13994.533784557358|181.18833374932984|{"type":"Polygon","coordinates":[[[-64.751478,17.733195],[-66.61764045,17.997128078],[-66.857596987,18.031300765],[-67.147327525,18.085732297],[-67.152849715,18.180637237],[-67.15088511,18.442809336],[-66.716914971,18.473288479],[-66.065469531,18.455993287],[-64.914717,18.340605],[-64.751478,17.733195]]]}                                                                                                                                                                                                                                                                                                                                                                                                |
+|5  |31   |21.0626610405484226 |-157.4366158044516129|{HI}                                    |38086.85314123221 |310.8336433125356 |{"type":"Polygon","coordinates":[[[-155.472136038,19.199662538],[-159.670619235,21.960856242],[-159.312875364,22.08782195],[-157.954296698,21.676563792],[-156.489331029,20.884513592],[-155.469829648,20.076173035],[-155.112841874,19.718139702],[-155.472136038,19.199662538]]]}                                                                                                                                                                                                                                                                                                                                                                                                                               |
+|7  |20   |61.4283347191000550 |-149.1065950642000000|{AK}                                    |127886.74802924707|878.1834359521587 |{"type":"Polygon","coordinates":[[[-152.375607731,57.800899983],[-151.550129834,59.652470116],[-151.077826958,60.493169052],[-147.739392817,64.831744708],[-147.662229159,64.829700238],[-147.092624534,64.678406705],[-145.540928,62.108932],[-145.750649147,60.541254774],[-152.375607731,57.800899983]]]}                                                                                                                                                                                                                                                                                                                                                                                                      |
+|11 |6    |56.8464652595000667 |-133.6972936310000000|{AK}                                    |24402.441588487243|372.7371805267453 |{"type":"Polygon","coordinates":[[[-131.685788419,55.353718689],[-135.354876741,57.051565564],[-134.465152632,58.329079511],[-132.375803899,56.471782387],[-131.685788419,55.353718689]]]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|10 |5    |64.4963331928000800 |-161.0029954156000000|{AK}                                    |262296.65332022385|2082.975002631742 |{"type":"Polygon","coordinates":[[[-158.536312298,59.000474761],[-161.784612775,60.78834235],[-165.378188783,64.499122194],[-162.586826252,66.896001624],[-156.72903697,71.297725035],[-158.536312298,59.000474761]]]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+|0  |4    |13.9292329342500500 |145.0146552985000000 |{GU,MP}                                 |606.9734444712391 |167.33466045801944|{"type":"Polygon","coordinates":[[[144.7366118,13.4752103],[145.724472394,15.211634437],[144.823076,13.525133],[144.7366118,13.4752103]]]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|15 |1    |7.3524440000000500  |134.4645200000000000 |{PW}                                    |0                 |0                 |{"type":"Point","coordinates":[134.46452,7.352444]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+|3  |1    |-14.2902420000000000|-170.6857410000000000|{AS}                                    |0                 |0                 |{"type":"Point","coordinates":[-170.685741,-14.290242]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|1  |1    |51.8680050000000000 |-176.6402630000000000|{AK}                                    |0                 |0                 |{"type":"Point","coordinates":[-176.640263,51.868005]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+
+# Reference
+
+## Hospital Data
+https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals?selectedAttribute=LONGITUDE 
+
+## Software
+### Postgres.app
+Postgres to for postgres database server
+https://postgresapp.com/downloads.html 
+
+### pgAdmin 4
+pgAdmin 4 for administrating Postgres Database
+https://www.pgadmin.org/download/ 
+
+## Online Tool
+
+### GeoJSON.io
+geojson.io is a convenient online tool to visualize GeoJSON on a map
+https://geojson.io/
+
+The following is the polygon cluster with the largest number of hospitals.
+![largest cluster visualization](docs/images/cid_6_largest_cluster.png)
+
+### CSV to SQL Converter Website
+Convenient online tool to convert csv text to SQL queries include create table
+https://www.convertcsv.com/csv-to-sql.htm 
+
+![csv to sql converter website](docs/images/csv_to_sql_converter_website.png)
+
+### CSV to Markdown Converter Website
+Convenient online tool to convert csv text to Markdown
+https://www.convertcsv.com/csv-to-markdown.htm
+
