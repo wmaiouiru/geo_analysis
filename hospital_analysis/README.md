@@ -1,3 +1,28 @@
+- [Summary](#summary)
+  * [Analysis Summary](#analysis-summary)
+    + [Small Cluster Analysis](#small-cluster-analysis)
+    + [Distance Analysis](#distance-analysis)
+- [Instructions / How To](#instructions---how-to)
+  * [Download Data](#download-data)
+  * [Install Tools](#install-tools)
+  * [Load data into Postgres](#load-data-into-postgres)
+  * [Visualize Results in QGIS3](#visualize-results-in-qgis3)
+  * [Analyze data in PostGIS](#analyze-data-in-postgis)
+- [Reference](#reference)
+  * [Hospital Data](#hospital-data)
+  * [Software](#software)
+    + [Postgres.app](#postgresapp)
+    + [pgAdmin 4](#pgadmin-4)
+  * [Online Tool](#online-tool)
+    + [GeoJSON.io](#geojsonio)
+    + [CSV to SQL Converter Website](#csv-to-sql-converter-website)
+    + [CSV to Markdown Converter Website](#csv-to-markdown-converter-website)
+- [Future and TODO](#future-and-todo)
+- [Appendix](#appendix)
+  * [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 # Summary
 As a weekend project, to practice my GIS skills, I analyzed [hospital GPS location data for 50 US states, Washington D.C., US territories of Puerto Rico, Guam, American Samoa, Northern Mariana Islands, Palau, and Virgin Islands](https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals). I analyze the culsters of hospital GPS locations using [K-means algorithm](https://postgis.net/docs/ST_ClusterKMeans.html). 
 
@@ -31,17 +56,18 @@ See [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result) 
 
 # Instructions / How To 
 
-1. Download Hospital data from Homeland Infrastructure Foundation-Level Data (HIFLD)
+## Download Data
+Download Hospital data from Homeland Infrastructure Foundation-Level Data (HIFLD)
 
 https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals?selectedAttribute=LONGITUDE 
 
-2. Tool Installation
-    1. Install Postgres Database ([Use Postgres.app for Mac](https://postgresapp.com/))
-    2. Install [pgadmin4](https://www.pgadmin.org/) database client tool 
-    3. Enable (PostGIS)[https://postgis.net/install/] in Postgres [For mac use `brew install postgis`]
-    4. In the working database execute `CREATE EXTENSION postgis;` to enable postgis.
-3. Load data into Postgres
-    1. Create table using [Convert CSV to SQL](https://www.convertcsv.com/csv-to-sql.htm) online tool
+## Install Tools
+1. Install Postgres Database ([Use Postgres.app for Mac](https://postgresapp.com/))
+2. Install [pgadmin4](https://www.pgadmin.org/) database client tool 
+3. Enable (PostGIS)[https://postgis.net/install/] in Postgres [For mac use `brew install postgis`]
+4. In the working database execute `CREATE EXTENSION postgis;` to enable postgis.
+## Load data into Postgres
+1. Create database table using [Convert CSV to SQL](https://www.convertcsv.com/csv-to-sql.htm) online tool
 Example create table query
 ```sql
 CREATE TABLE covid.hospitals(
@@ -81,29 +107,29 @@ CREATE TABLE covid.hospitals(
   ,HELIPAD    VARCHAR(1) NOT NULL
 );
 ```
-4. Load data using pgadmin4
+2. Load data using pgadmin4
     1. With small amount of data, we can directly use the insert rows statement, but with large amount of data import tool should be used.
     2. Import data using pgadmin4 (The table the data is being imported into must be highlighted in pgadmin4)
 ![pgadmin4 data import tool pic](docs/images/pgadmin4_data_import_tool.png)
-5. Add Geometry Column with Latlng
+3. Add Geometry Column with Latlng
 ```sql
 SELECT 
     AddGeometryColumn ('covid','hospitals','geom',4326,'POINT',2);
 ```
-6. Convert LatLng to St_points
+4. Convert LatLng to St_points
 ```sql
 UPDATE
     covid.hospitals
 SET geom = 
     ST_SetSRID(ST_MakePoint(longitude, latitude),4326)
 ```
-7. Visualize Results in QGIS3
-    1. In QGIS add PostGIS connection to database
+## Visualize Results in QGIS3
+1. In QGIS add PostGIS connection to database
 ![QGIS Add Conection](docs/images/postgis_add_connection.png)
-    2. Add hospitals points to layer and you should see the following screen (Adding XYZ Tiles with Google would be helpful to visualization as well)
+2. Add hospitals points to layer and you should see the following screen (Adding XYZ Tiles with Google would be helpful to visualization as well)
 ![QGIS 3 Hospital Visualization](docs/images/qgis3_hospital_visualization.png)
 
-8. Analyze kmeans point clusters using ST_ClusterKMeans
+3. Analyze kmeans point clusters using ST_ClusterKMeans
     1. Click on Processing Toolbox
     2. Select k-means clustering
 ![QGIS 3 K Means Clustering](docs/images/k_means_clustering_qgi3_selection.png)
@@ -121,7 +147,8 @@ SELECT
 FROM
     covid.hospitals;
 ```
-9. In SQL, analyze the area it needs to cover, the maximum distance, and the number of hospitals
+## Analyze data in PostGIS
+In SQL, analyze the area it needs to cover, the maximum distance, and the number of hospitals
 ```sql
 WITH
     hospital_cluster_points AS
@@ -167,7 +194,6 @@ SELECT
 FROM hospital_cluter_group
 ```
 
-10. End result
 See [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result)
 
 # Reference
@@ -207,6 +233,7 @@ https://www.convertcsv.com/csv-to-markdown.htm
 
 # Future and TODO
 - [ ] Analyze cluster using Density-based spatial clustering of applications with noise (DBSCAN) [algorithm](https://postgis.net/docs/ST_ClusterDBSCAN.html) to analyze based on distance
+- [ ] Analyze Using [GeoPandas](https://geopandas.org/)
 
 
 # Appendix
