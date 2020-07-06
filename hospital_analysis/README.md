@@ -27,7 +27,7 @@ Excluding the dispersed location in West Alaska with cluster center of latitutde
 |Zipline   |100            |15.0                 |https://flyzipline.com/how-it-works/    |
 |Cessna 152|203            |7.4                  |https://en.wikipedia.org/wiki/Cessna_152|
 
-
+See [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result) for the rows of data.
 
 # Instructions / How To 
 
@@ -105,9 +105,12 @@ SET geom =
 
 8. Analyze kmeans point clusters using ST_ClusterKMeans
     1. Click on Processing Toolbox
-    2. Select k-means clustering 
+    2. Select k-means clustering
+![QGIS 3 K Means Clustering](docs/images/k_means_clustering_qgi3_selection.png)
+![QGIS 3 K Means Clustering](docs/images/k_means_clustering_qgi3_wizard.png)
     3. Analyze the result using layers in QGIS
-    4. In Layer Properties select categorized and pick the CLUSTER_ID generated from CLUSTER_ID.
+    4. In Layer Properties select `categorized` and pick the CLUSTER_ID generated from CLUSTER_ID.
+![Categorized selection](docs/images/categorized_layer_selection.png)
     5. Click on classify to generate the values. And apply to view the visualization.
 ![QGIS 3 Hospital Visualization](docs/images/qgis3_hospital_20_clusters.png)
     6. The same analysis can be conducted using PostGIS SQL query `ST_ClusterKMeans`
@@ -183,6 +186,13 @@ https://www.pgadmin.org/download/
 
 ## Online Tool
 
+### GeoJSON.io
+geojson.io is a convenient online tool to visualize GeoJSON on a map
+https://geojson.io/
+
+The following is the polygon cluster with the largest number of hospitals.
+![largest cluster visualization](docs/images/cid_6_largest_cluster.png)
+
 ### CSV to SQL Converter Website
 Convenient online tool to convert csv text to SQL queries include create table
 https://www.convertcsv.com/csv-to-sql.htm 
@@ -201,8 +211,8 @@ https://www.convertcsv.com/csv-to-markdown.htm
 
 # Appendix
 ## 20 Hospital Cluster Analysis Result
-[Download labeled csv here](./docs/data/hospitals_20_clusters_labeled.csv)
-[Download aggregated csv here](./docs/data/hospitals_20_clusters_aggregated.csv)
+- [Download labeled csv here](./docs/data/hospitals_20_clusters_labeled.csv)
+- [Download aggregated csv here](./docs/data/hospitals_20_clusters_aggregated.csv)
 
 Data:
 |cid|count|lat                 |lng                  |states                                  |area(km2)         |max_distnace_km   |st_asgeojson                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
