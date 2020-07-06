@@ -1,18 +1,47 @@
+# Summary
+As a weekend project, to practice my GIS skills, I analyzed [hospital GPS location data for 50 US states, Washington D.C., US territories of Puerto Rico, Guam, American Samoa, Northern Mariana Islands, Palau, and Virgin Islands](https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals). I analyze the culsters of hospital GPS locations using [K-means algorithm](https://postgis.net/docs/ST_ClusterKMeans.html). 
 
-# Instructions
+## Analysis Summary
+
+### Small Cluster Analysis
+Using 20 clusters as a starting point, the following were the small hopsital culster locations in the US.
+
+|Hospital Count|Latitude   |Longitutde  |States                        |Hospital Names                                                                                               |
+|--------------|-----------|------------|------------------------------|-------------------------------------------------------------------------------------------------------------|
+|77            |18.2791879 |-66.27450576|Puerto Rico, Virgin Islands   |Too many to display                                                                                          |
+|31            |21.06266104|-157.4366158|Hawaii                        |Too many to display                                                                                          |
+|20            |61.42833472|-149.1065951|Alaska                        |Too many to display                                                                                          |
+|6             |56.84646526|-133.6972936|Alaska                        |Too many to display                                                                                          |
+|5             |64.49633319|-161.0029954|Alaska                        |Too many to display                                                                                          |
+|4             |13.92923293|145.0146553 |Guam, Northern Mariana Islands|GUAM REGIONAL MEDICAL CITY, COMMONWEALTH HEALTH CENTER, GUAM MEMORIAL HOSPITAL AUTHORITY, NAVAL HOSPITAL GUAM|
+|1             |7.352444   |134.46452   |Palau                         |BELAU NATIONAL HOSPITAL                                                                                      |
+|1             |-14.290242 |-170.685741 |American Samoa                |LBJ TROPICAL MEDICAL CENTER                                                                                  |
+|1             |51.868005  |-176.640263 |Alaska                        |ADAK MEDICAL CENTER - EAT                                                                                    |
+
+
+### Distance Analysis
+Excluding the dispersed location in West Alaska with cluster center of latitutde, longtiude, `64.49633319, -161.0029954`, the following are the duration that can be reach within 1500 kilometers via air transport assuming the `maximum distance can be reached`. 
+|Name      |Top Speed (kph)|Hours to Reach 1500km|Link                                    |
+|----------|---------------|---------------------|----------------------------------------|
+|Mavic Pro |65             |23.1                 |https://www.dji.com/mavic               |
+|Zipline   |100            |15.0                 |https://flyzipline.com/how-it-works/    |
+|Cessna 152|203            |7.4                  |https://en.wikipedia.org/wiki/Cessna_152|
+
+
+
+# Instructions / How To 
 
 1. Download Hospital data from Homeland Infrastructure Foundation-Level Data (HIFLD)
 
 https://hifld-geoplatform.opendata.arcgis.com/datasets/hospitals?selectedAttribute=LONGITUDE 
 
 2. Tool Installation
-    1. Install Postgres Database
-    2. Install pgadmin4 client tool
-    3. Enable PostGIS in Postgres [For mac use `brew install postgis`]
+    1. Install Postgres Database ([Use Postgres.app for Mac](https://postgresapp.com/))
+    2. Install [pgadmin4](https://www.pgadmin.org/) database client tool 
+    3. Enable (PostGIS)[https://postgis.net/install/] in Postgres [For mac use `brew install postgis`]
     4. In the working database execute `CREATE EXTENSION postgis;` to enable postgis.
 3. Load data into Postgres
-4. Create table using “Convert CSV to SQL”
-
+    1. Create table using [Convert CSV to SQL](https://www.convertcsv.com/csv-to-sql.htm) online tool
 Example create table query
 ```sql
 CREATE TABLE covid.hospitals(
@@ -52,29 +81,36 @@ CREATE TABLE covid.hospitals(
   ,HELIPAD    VARCHAR(1) NOT NULL
 );
 ```
-5. Load data using pgadmin4
-6. With small amount of data, we can directly use the insert rows statement, but with large amount of data import tool should be used.
-    1. Import data using pgadmin4 (The table the data is being imported into must be highlighted in pgadmin4)
+4. Load data using pgadmin4
+    1. With small amount of data, we can directly use the insert rows statement, but with large amount of data import tool should be used.
+    2. Import data using pgadmin4 (The table the data is being imported into must be highlighted in pgadmin4)
 ![pgadmin4 data import tool pic](docs/images/pgadmin4_data_import_tool.png)
-7. Add Geometry Column with Latlng
+5. Add Geometry Column with Latlng
 ```sql
 SELECT 
     AddGeometryColumn ('covid','hospitals','geom',4326,'POINT',2);
 ```
-8. Convert LatLng to St_points
+6. Convert LatLng to St_points
 ```sql
 UPDATE
     covid.hospitals
 SET geom = 
     ST_SetSRID(ST_MakePoint(longitude, latitude),4326)
 ```
-9. Visualize result in QGIS3
+7. Visualize Results in QGIS3
     1. In QGIS add PostGIS connection to database
 ![QGIS Add Conection](docs/images/postgis_add_connection.png)
     2. Add hospitals points to layer and you should see the following screen (Adding XYZ Tiles with Google would be helpful to visualization as well)
 ![QGIS 3 Hospital Visualization](docs/images/qgis3_hospital_visualization.png)
 
-10. Analyze kmeans point clusters using ST_ClusterKMeans
+8. Analyze kmeans point clusters using ST_ClusterKMeans
+    1. Click on Processing Toolbox
+    2. Select k-means clustering 
+    3. Analyze the result using layers in QGIS
+    4. In Layer Properties select categorized and pick the CLUSTER_ID generated from CLUSTER_ID.
+    5. Click on classify to generate the values. And apply to view the visualization.
+![QGIS 3 Hospital Visualization](docs/images/qgis3_hospital_20_clusters.png)
+    6. The same analysis can be conducted using PostGIS SQL query `ST_ClusterKMeans`
 ```sql
 SELECT
     ST_ClusterKMeans(geom,3) over() cid,
@@ -82,17 +118,7 @@ SELECT
 FROM
     covid.hospitals;
 ```
-
-11. Click on Processing Toolbox
-
-12. Select k-means clustering 
-
-13. Analyze the result using layers in QGIS
-
-14. In Layer Properties select categorized and pick the CLUSTER_ID generated from CLUSTER_ID.
-15. Click on classify to generate the values. And apply to view the visualization.
-![QGIS 3 Hospital Visualization](docs/images/qgis3_hospital_20_clusters.png)
-16. In sql analyze the area it needs to cover, analyze the maximum distance, analyze the number of hospitals
+9. In SQL, analyze the area it needs to cover, the maximum distance, and the number of hospitals
 ```sql
 WITH
     hospital_cluster_points AS
@@ -138,13 +164,8 @@ SELECT
 FROM hospital_cluter_group
 ```
 
-17. End result
-
-```
-
-```
-
-
+10. End result
+See [20 Hospital Cluster Analysis Result](#20-hospital-cluster-analysis-result)
 
 # Reference
 
@@ -174,11 +195,16 @@ https://www.convertcsv.com/csv-to-markdown.htm
 
 
 
-
+# Future and TODO
+- [ ] Analyze cluster using Density-based spatial clustering of applications with noise (DBSCAN) [algorithm](https://postgis.net/docs/ST_ClusterDBSCAN.html) to analyze based on distance
 
 
 # Appendix
 ## 20 Hospital Cluster Analysis Result
+[Download labeled csv here](./docs/data/hospitals_20_clusters_labeled.csv)
+[Download aggregated csv here](./docs/data/hospitals_20_clusters_aggregated.csv)
+
+Data:
 |cid|count|lat                 |lng                  |states                                  |area(km2)         |max_distnace_km   |st_asgeojson                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 |---|-----|--------------------|---------------------|----------------------------------------|------------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 |6  |1065 |40.7701402338197695 |-86.7480110540600668 |{IA,IL,IN,KY,MI,MO,OH,TN,WI}            |709364.8071422393 |1020.2507729426447|{"type":"Polygon","coordinates":[[[-85.190868827,35.620685972],[-85.742978922,35.699844491],[-86.425031376,35.860579123],[-89.571144976,37.30358194],[-90.772665815,37.925973114],[-91.170642401,38.195829614],[-91.449585554,38.693078127],[-91.173080162,40.80934797],[-90.106733303,46.48074586],[-89.30165846,46.865595361],[-88.443500848,47.238783173],[-84.350551184,46.498080874],[-82.652115684,43.842662631],[-82.429629625,42.98687104],[-82.433390417,42.955942806],[-82.479201914,42.785363647],[-82.881604797,41.287962046],[-83.427094959,39.547856936],[-83.945255796,38.077121254],[-84.515863673,36.504424885],[-85.190868827,35.620685972]]]}                                                  |
@@ -201,4 +227,3 @@ https://www.convertcsv.com/csv-to-markdown.htm
 |15 |1    |7.3524440000000500  |134.4645200000000000 |{PW}                                    |0                 |0                 |{"type":"Point","coordinates":[134.46452,7.352444]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 |3  |1    |-14.2902420000000000|-170.6857410000000000|{AS}                                    |0                 |0                 |{"type":"Point","coordinates":[-170.685741,-14.290242]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 |1  |1    |51.8680050000000000 |-176.6402630000000000|{AK}                                    |0                 |0                 |{"type":"Point","coordinates":[-176.640263,51.868005]}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-[Source Data Here](./docs/data/hospitals_20_clusters.csv)
